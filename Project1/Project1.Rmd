@@ -1,0 +1,92 @@
+---
+title: "Under- and Over-representation at the Museum of Modern Art"
+author: "Aviva Foster"
+date: "1 March 2024"
+output:
+  html_document:
+    theme: bootstrap
+    toc: false
+    toc_float: false
+    code_download: true
+  pdf_document:
+    toc: false
+---
+
+```{r, include = FALSE}
+# Load any R Packages you may need
+library(tidyverse)
+library(ggplot2)
+library(mosaic)
+library(ggthemes)
+```
+
+```{r, include = FALSE}
+# Load any datasets you may need
+artists <- read_csv("artists.csv")
+artworks <- read_csv("artworks.csv")
+
+#Modify datasets to make data consistent/helpful
+artists$Gender[which(artists$Gender == "male")] = "Male"
+artists$Nationality[which(artists$Nationality == "Nationality unknown")] = NA
+artists$Gender[which(is.na(artists$Gender))] = "Unknown/Other"
+
+#Perform some simple operations with the artists' birth years
+more_years = artists %>% 
+  filter(`Birth Year` > 0)
+year_mean = mean(~`Birth Year`, data = more_years)
+year_sd = sd(~`Birth Year`, data = more_years)
+mid_low_range = year_mean - year_sd
+mid_high_range = year_mean + year_sd
+
+#Create new version of dataset, counting and only including nationalities with more than 200 artists, for more readable graphs
+more_artists = artists %>% 
+  select(Nationality, Gender, `Birth Year`) %>% 
+  group_by(Nationality) %>% 
+  mutate(freq = n()) %>% 
+  filter(freq > 200)
+
+length(unique((artists$Nationality)))
+```
+
+
+
+### Background
+
+The Museum of Modern Art (often referred to as the MoMA) in New York City is a museum dedicated to modern and contemporary art, founded in 1929. However, despite its modern focus, the museum has come under fire for controversial political moves before, including the withholding of funding for a project which opposed the Vietnam War in the 1960s. Another controversial aspect of the MoMA is its lack of representation in the art and artists it features.
+
+
+### Demographics: Nationality
+
+One problematic aspect of the MoMA is the demographics of the artists it features in its collections. The MoMA holds art made by artists belonging to 125 unique nationalities, but as you can see in the graph depicted below, only 9 countries have more than 200 artists represented in the collection. Additionally, out of those 9, only one country (Japan) is from a place other than Europe and North America, and the United States is extremely overrepresented, with nearly 5,000 individual artists, whereas every other country has under 1,000. This bar chart clearly shows this disparity by comparing the number of artists of each nationality side-by-side.
+
+
+```{r, message = FALSE, warning = FALSE}
+ggplot(na.omit(more_artists), aes(x = Nationality)) + 
+  geom_bar(fill = "turquoise") + 
+  labs(y = "Number of artists", x = "Nationality of artists", title = "Number of artists belonging to each nationality*", caption = "*Only including nationalities with more than 200 artists represented in the MoMA") +
+  theme_clean()
+```
+
+
+
+### Demographics: Gender
+
+Nationality is not the only problematic demographic disparity in the artists MoMA chooses to feature. There is also a significant gender bias among the artworks in the museum's collection. As the following graph shows, with pink representing the proportion of female artists, blue representing the proportion of male artists, and gray representing the proportion of artists labeled "Unknown/Other," a very significant proportion of the artists featured--regardless of nationality--are male, with an extremely small proportion of the artists being female (and an even smaller proportion being unknown or other). Since this stacked bar chart is on a proportion scale and is still divided by nationality, we can clearly see the overrepresentation of male artists in the MoMA's collection, while also noting that this inequality varies slightly depending on the nationality of the artists: American artists have a slightly higher representation of female artists, at nearly 25%, whereas France and Italy have the lowest proportions of female artists. All nationalities have only a small proportion of artists labeled "Unknown/Other", although Denmark has a slightly larger proportion than the others.
+
+
+```{r, message = FALSE, warning = FALSE}
+ggplot(data = na.omit(more_artists), aes(x = Nationality)) + 
+  geom_bar(aes(fill = Gender), position = "fill") + labs(y = "Proportion", x = "Nationality",title = "Proportion of artists, by nationality, of each gender") +
+  scale_fill_manual(values = c("pink", "dodgerblue", "gray")) +
+  theme_clean() +
+  theme(legend.position = "bottom")
+```
+
+
+### Conclusion
+
+The Museum of Modern Art, while claiming to focus on the modern era, does not represent a modern population. American and European men are strongly overrepresented among the artists featured in their collection, and this problem has not been corrected in the nearly 100 years of the museum's history. Although there are many great works of art at the MoMA, the museum still leaves much to be desired for the modern patron.
+
+This data was provided by the Museum of Modern Art for the public domain, drawn from [this online dataset](https://www.kaggle.com/datasets/momanyc/museum-collection?select=artworks.csv). The dataset includes information about 15,091 individual artists, including their names, nationalities, genders, and birth and death years; it also contains data on 130,262 individual works of art (which I did not use in this analysis).
+
+
